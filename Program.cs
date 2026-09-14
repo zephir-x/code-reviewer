@@ -19,8 +19,8 @@ using var host = Host.CreateDefaultBuilder(args)
         // Register GitHub service for fetching PR diffs
         services.AddTransient<IGitHubService, GitHubService>();
         
-        // TODO: Register AI Evaluator service for Gemini API communication
-        // services.AddTransient<IAiEvaluator, GeminiAiEvaluator>();
+        // Register HTTP Client and AI Evaluator for Gemini API communication
+        services.AddHttpClient<IAiEvaluator, GeminiAiEvaluator>();
 
         // TODO: Register GitHub Publisher service for inline comments
         // services.AddTransient<IGitHubPublisher, GitHubPublisher>();
