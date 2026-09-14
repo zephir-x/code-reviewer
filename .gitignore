@@ -1,0 +1,9 @@
+﻿# JetBrains IDE
+.idea/
+
+# .NET Core
+bin/
+obj/
+
+# Application Configuration (Secrets)
+appsettings.Development.json
