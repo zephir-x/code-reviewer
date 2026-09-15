@@ -20,7 +20,18 @@ public class GeminiAiEvaluator(HttpClient httpClient, IConfiguration config, ILo
         3. Reject business logic in ASP.NET Core controllers.
         4. Ignore trivial styling or formatting issues.
         5. To determine the 'lineNumber', look at the hunk header (e.g., @@ -10,4 +10,5 @@) and count exactly to the added line.
-        6. Return output EXCLUSIVELY as a JSON object matching the requested schema. No markdown, no conversational text.
+        6. Return output EXCLUSIVELY as a JSON object matching exactly this schema:
+        {
+            "issues": [
+                {
+                    "fileName": "string (extract from the 'File: ' header)",
+                    "lineNumber": int (the exact line number in the modified file),
+                    "severity": "High | Medium | Low",
+                    "comment": "string (your detailed architectural feedback)"
+                }
+            ]
+        }
+        No markdown formatting, no code blocks, just raw JSON.
         """;
 
     public async Task<CodeReviewResult> EvaluateDiffAsync(List<string> diffs)
