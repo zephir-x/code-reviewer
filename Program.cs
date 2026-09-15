@@ -47,8 +47,10 @@ using var host = Host.CreateDefaultBuilder(args)
     })
     .Build();
 
-// Retrieve logger to monitor application lifecycle
+// Retrieve logger and configuration to monitor application lifecycle
 var logger = host.Services.GetRequiredService<ILogger<Program>>();
+var config = host.Services.GetRequiredService<IConfiguration>();
+
 logger.LogInformation("Code Reviewer Agent started at {Time}", DateTimeOffset.Now);
 
 try
@@ -56,26 +58,46 @@ try
     // Resolve main engine and execute the processing pipeline
     var engine = host.Services.GetRequiredService<CodeReviewerEngine>();
     
-    // Fetch dynamic context from GitHub Actions environment
-    var githubRepo = Environment.GetEnvironmentVariable("GITHUB_REPOSITORY");
-    var prNumberString = Environment.GetEnvironmentVariable("PR_NUMBER");
+    string owner;
+    string repo;
+    int prNumber;
 
-    // Fallback to local testing if environment variables are missing
-    if (string.IsNullOrWhiteSpace(githubRepo) || string.IsNullOrWhiteSpace(prNumberString) || !int.TryParse(prNumberString, out var prNumber))
+    // Check if running inside GitHub Actions CI/CD environment
+    bool isGitHubActions = Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true";
+
+    if (isGitHubActions)
     {
-        logger.LogWarning("CI/CD context missing. Falling back to local development values.");
-        await engine.RunPipelineAsync("zephir-x", "code-review-test", 2);
+        // Fetch dynamic context from GitHub Actions environment
+        var githubRepo = Environment.GetEnvironmentVariable("GITHUB_REPOSITORY");
+        var prNumberString = Environment.GetEnvironmentVariable("PR_NUMBER");
+
+        if (string.IsNullOrWhiteSpace(githubRepo) || string.IsNullOrWhiteSpace(prNumberString) || !int.TryParse(prNumberString, out prNumber))
+        {
+            throw new InvalidOperationException("Invalid CI/CD context. GITHUB_REPOSITORY or PR_NUMBER environment variables are missing.");
+        }
+
+        // GITHUB_REPOSITORY format is always "owner/repo" (e.g., "zephir-x/GymCore")
+        var repoParts = githubRepo.Split('/');
+        owner = repoParts[0];
+        repo = repoParts[1];
     }
     else
     {
-        // GITHUB_REPOSITORY format is always "owner/repo" (e.g., "zephir-x/GymCore")
-        var repoParts = githubRepo.Split('/');
-        var owner = repoParts[0];
-        var repo = repoParts[1];
+        // Fallback to local development configuration
+        logger.LogWarning("Local environment detected. Fetching target repository details from configuration.");
         
-        logger.LogInformation("CI/CD environment detected. Targeting PR #{PrNumber} in {Owner}/{Repo}", prNumber, owner, repo);
-        await engine.RunPipelineAsync(owner, repo, prNumber);
+        owner = config["TargetRepository:Owner"];
+        repo = config["TargetRepository:Name"];
+        var prNumberString = config["TargetRepository:PullRequestNumber"];
+        
+        if (string.IsNullOrWhiteSpace(owner) || string.IsNullOrWhiteSpace(repo) || !int.TryParse(prNumberString, out prNumber))
+        {
+            throw new InvalidOperationException("Target repository configuration is missing in appsettings.Development.json.");
+        }
     }
+    
+    logger.LogInformation("Targeting PR #{PrNumber} in {Owner}/{Repo}", prNumber, owner, repo);
+    await engine.RunPipelineAsync(owner, repo, prNumber);
     
     logger.LogInformation("Code review pipeline completed successfully.");
 }

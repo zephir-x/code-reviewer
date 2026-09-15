@@ -37,11 +37,16 @@ public class GeminiAiEvaluator(HttpClient httpClient, IConfiguration config, ILo
     public async Task<CodeReviewResult> EvaluateDiffAsync(List<string> diffs)
     {
         var apiKey = config["Gemini:ApiKey"];
-        var model = config["Gemini:Model"] ?? "gemini-3.6-flash";
+        var model = config["Gemini:Model"];
 
         if (string.IsNullOrWhiteSpace(apiKey))
         {
             throw new InvalidOperationException("Gemini API key missing from configuration!");
+        }
+
+		if (string.IsNullOrWhiteSpace(model))
+        {
+            throw new InvalidOperationException("Gemini Model missing from configuration!");
         }
 
         logger.LogInformation("Sending {Count} files to Gemini ({Model}) for evaluation...", diffs.Count, model);
