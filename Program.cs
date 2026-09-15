@@ -56,9 +56,26 @@ try
     // Resolve main engine and execute the processing pipeline
     var engine = host.Services.GetRequiredService<CodeReviewerEngine>();
     
-    // TEMPORARY: Hardcoded repo variables for local testing
-    // In next phase, these will be dynamically extracted from GitHub Actions environment variables (GITHUB_REPOSITORY, etc.)
-    await engine.RunPipelineAsync("zephir-x", "code-review-test", 2);
+    // Fetch dynamic context from GitHub Actions environment
+    var githubRepo = Environment.GetEnvironmentVariable("GITHUB_REPOSITORY");
+    var prNumberString = Environment.GetEnvironmentVariable("PR_NUMBER");
+
+    // Fallback to local testing if environment variables are missing
+    if (string.IsNullOrWhiteSpace(githubRepo) || string.IsNullOrWhiteSpace(prNumberString) || !int.TryParse(prNumberString, out var prNumber))
+    {
+        logger.LogWarning("CI/CD context missing. Falling back to local development values.");
+        await engine.RunPipelineAsync("zephir-x", "code-review-test", 2);
+    }
+    else
+    {
+        // GITHUB_REPOSITORY format is always "owner/repo" (e.g., "zephir-x/GymCore")
+        var repoParts = githubRepo.Split('/');
+        var owner = repoParts[0];
+        var repo = repoParts[1];
+        
+        logger.LogInformation("CI/CD environment detected. Targeting PR #{PrNumber} in {Owner}/{Repo}", prNumber, owner, repo);
+        await engine.RunPipelineAsync(owner, repo, prNumber);
+    }
     
     logger.LogInformation("Code review pipeline completed successfully.");
 }

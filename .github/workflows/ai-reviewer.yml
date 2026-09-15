@@ -1,0 +1,43 @@
+name: AI Architecture Guard
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened] # Trigger on new PRs and new commits
+
+permissions:
+  pull-requests: write # Required to post comments in PR
+  contents: read # Required to read repo data
+
+jobs:
+  code-review:
+    name: Perform AI Code Review
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Run Code Reviewer Agent
+        run: dotnet run --no-restore
+        env:
+          # Force production environment
+          DOTNET_ENVIRONMENT: Production
+          
+          # Built-in automatic GitHub token (no PAT needed!)
+          GitHub__Token: ${{ secrets.GITHUB_TOKEN }}
+          
+          # Custom secret that you must add to the repository settings
+          Gemini__ApiKey: ${{ secrets.GEMINI_API_KEY }}
+          
+          # Pass PR number dynamically to our C# application
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          
+          # Note: GITHUB_REPOSITORY is automatically injected into env by default
