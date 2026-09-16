@@ -86,8 +86,8 @@ try
         // Fallback to local development configuration
         logger.LogWarning("Local environment detected. Fetching target repository details from configuration.");
         
-        owner = config["TargetRepository:Owner"];
-        repo = config["TargetRepository:Name"];
+        owner = config["TargetRepository:Owner"] ?? string.Empty;
+        repo = config["TargetRepository:Name"] ?? string.Empty;
         var prNumberString = config["TargetRepository:PullRequestNumber"];
         
         if (string.IsNullOrWhiteSpace(owner) || string.IsNullOrWhiteSpace(repo) || !int.TryParse(prNumberString, out prNumber))
