@@ -21,6 +21,7 @@
 - [Key Features & Architectural Marvels](#-key-features--architectural-marvels)
 - [Algorithm Data Flow](#-algorithm-data-flow)
 - [Technology Stack](#-technology-stack)
+- [Prompt Engineering / Customization](#-prompt-engineering--customization)
 - [Integration Guide (Cloud CI/CD)](#-integration-guide-cloud-cicd)
 - [Getting Started (Local Development)](#-getting-started-local-development)
 - [Author / Contact](#-author--contact)
@@ -98,6 +99,17 @@ sequenceDiagram
 | **GitHub API** | Octokit.NET (Diff fetching, Inline Commenting) |
 | **Resilience** | Polly v8 (StandardResilienceHandler, Circuit Breaker) |
 | **CI/CD** | GitHub Actions (Reusable workflow patterns, Dogfooding) |
+
+---
+
+## 🧠 Prompt Engineering / Customization
+
+Every development team has its own rules and standards. One project might rely on *Clean Architecture*, another on a simple *three-tier* approach, while a third might require specific patterns like *MediatR*.
+
+You can easily customize the rules guiding the AI by modifying the **System Prompt**. It is located in the file:
+👉 **[GeminiAiEvaluator.cs](Services/GeminiAiEvaluator.cs)** (the `SystemPrompt` constant).
+
+By adding your own rules there (e.g., *"Our team always uses FluentValidation for DTOs"*), you ensure the agent enforces them during every code review.
 
 ---
 
@@ -195,9 +207,17 @@ cd code-reviewer
 
 ### 2. Configure Environment:
 Copy `appsettings.Example.json` to `appsettings.Development.json` and fill in the blanks:
-*   Add your **Personal Access Token (PAT)** with repository permissions.
+*   Add your **Personal Access Token (PAT)**.
+    > 💡 **Tip:** You can generate it at [GitHub Settings (Tokens)](https://github.com/settings/tokens). Ensure you select the **'repo'** scope so the agent can read diffs and post comments.
 *   Add your **Gemini API Key**.
 *   Set the **TargetRepository** (Owner, Name, and an existing PR number to test against).
+
+> **Important:** Ensure that your `appsettings.json` (and Development version) has the `<CopyToOutputDirectory>` set to `PreserveNewest` in your `.csproj` file, otherwise the app won't find the configuration:
+> ```xml
+> <None Update="appsettings*.json">
+>   <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+> </None>
+> ```
 
 > **Note:** `appsettings.Development.json` is safely .gitignored.
 
